@@ -70,14 +70,51 @@ public class myID3 extends Classifier {
            
         }
         //return value yg paling banyak        
+	return 0;
     }
     
     private double computeEntropy(Instances data) {
-        
-        
+	//find the positive result
+	return 0;
     }
     
     private double computeIG(Instances data, Attribute attribute) {
-        
+        // Pertama hitung Entropy(S)
+	double entropyS = computeEntropy(data);
+	// Lalu hitung entropi per atribut Entropy(Sv)
+	int attrPositive = 0 //change this later;
+	int attrNegative = 0 //change this later;
+	double entropySv = 0; // value nya di assign dari entropy(pos,neg)
+	
+	
+	return entropyS - entropySv;
+	
+    }
+    
+    /**
+     * Count the entropy of a training data
+     * @param pos   positive label of the training data or specific attribute
+     * @param neg   negative label of the training data or specific attribute
+     * @return
+     */    
+    public double entropy(int pos, int neg) {
+	double pn = (double) pos/(pos+neg);
+	double np = (double) neg/(pos+neg);
+	double result = 0;
+	if (pos>0) {
+	    result += -1*pn*log2(pn);
+	}
+	if (neg>0) {
+	    result += -1*np*log2(np);
+	}
+	return result;
+    }
+    
+    public double log2(int input) {
+	return Math.log(input)/Math.log(2);
+    }
+    
+    public double log2(double input) {
+	return Math.log(input)/Math.log(2);
     }
 }
