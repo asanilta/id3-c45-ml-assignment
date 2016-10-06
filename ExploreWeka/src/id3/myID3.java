@@ -62,6 +62,7 @@ public class myID3 extends Classifier {
     
     private Attribute findBestAttribute(Instances data, ArrayList<Attribute> attributes) {
         //hitung pake entropy & ig & syalala
+	return null;
     }
     
     private double mostCommonLabel(Instances data) {
@@ -78,8 +79,17 @@ public class myID3 extends Classifier {
 	//find the positive result
 	int classIdx = data.classIndex();
 	AttributeStats attributeStats = data.attributeStats(classIdx);
-	//Hitung per kelas
-	return 0;
+	int[] classCount = attributeStats.nominalCounts;
+	int sum = 0;
+	for (int i = 0; i<classCount.length; i++) {
+	    sum+=classCount[i];
+	}
+	double result = 0;
+	for (int i = 0; i<classCount.length; i++) {
+	    double p = (double) classCount[i]/sum;
+	    result += -1*p*log2(p);
+	}
+	return result;
     }
     
     private double computeIG(Instances data, Attribute attribute) {
@@ -88,32 +98,19 @@ public class myID3 extends Classifier {
 	// Lalu hitung entropi per atribut Entropy(Sv)
 	int attrIdx = 0; //index attribute
 	AttributeStats attributeStats = data.attributeStats(attrIdx);
-	int attrPositive = attributeStats.nominalCounts[0];//change this later
-	int attrNegative = attributeStats.nominalCounts[1];//change this later
-	double entropySv = entropy(attrPositive, attrNegative); // value nya di assign dari entropy(pos,neg)
-	
+	int[] attrCount = attributeStats.nominalCounts;
+	int sum = 0;
+	for (int i = 0; i<attrCount.length; i++) {
+	    sum+=attrCount[i];
+	}
+	double entropySv = 0;
+	for (int i = 0; i<attrCount.length; i++) {
+	    double p = (double) attrCount[i]/sum;
+	    entropySv += -1*p*log2(p);
+	}
 	
 	return entropyS - entropySv;
 	
-    }
-    
-    /**
-     * Count the entropy of a training data, with 2 attribute
-     * @param pos   positive label of the training data or specific attribute
-     * @param neg   negative label of the training data or specific attribute
-     * @return
-     */    
-    public double entropy(int pos, int neg) {
-	double pn = (double) pos/(pos+neg);
-	double np = (double) neg/(pos+neg);
-	double result = 0;
-	if (pos>0) {
-	    result += -1*pn*log2(pn);
-	}
-	if (neg>0) {
-	    result += -1*np*log2(np);
-	}
-	return result;
     }
     
     public double log2(int input) {
