@@ -10,6 +10,7 @@ import weka.core.Instance;
 import weka.core.Attribute;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import weka.core.AttributeStats;
 /**
  *
  * @author ASUS X202E
@@ -75,6 +76,9 @@ public class myID3 extends Classifier {
     
     private double computeEntropy(Instances data) {
 	//find the positive result
+	int classIdx = data.classIndex();
+	AttributeStats attributeStats = data.attributeStats(classIdx);
+	//Hitung per kelas
 	return 0;
     }
     
@@ -82,9 +86,11 @@ public class myID3 extends Classifier {
         // Pertama hitung Entropy(S)
 	double entropyS = computeEntropy(data);
 	// Lalu hitung entropi per atribut Entropy(Sv)
-	int attrPositive = 0 //change this later;
-	int attrNegative = 0 //change this later;
-	double entropySv = 0; // value nya di assign dari entropy(pos,neg)
+	int attrIdx = 0; //index attribute
+	AttributeStats attributeStats = data.attributeStats(attrIdx);
+	int attrPositive = attributeStats.nominalCounts[0];//change this later
+	int attrNegative = attributeStats.nominalCounts[1];//change this later
+	double entropySv = entropy(attrPositive, attrNegative); // value nya di assign dari entropy(pos,neg)
 	
 	
 	return entropyS - entropySv;
@@ -92,7 +98,7 @@ public class myID3 extends Classifier {
     }
     
     /**
-     * Count the entropy of a training data
+     * Count the entropy of a training data, with 2 attribute
      * @param pos   positive label of the training data or specific attribute
      * @param neg   negative label of the training data or specific attribute
      * @return
