@@ -196,8 +196,8 @@ import weka.filters.unsupervised.attribute.Remove;
         public void Menu() {
             System.out.println("1. Load Data");
             System.out.println("2. Remove Attribute");
-            System.out.println("3. Build Classifier");
-            System.out.println("4. Testing Model");
+            System.out.println("3. Do Resample");
+            System.out.println("4. Build Classifier");
             System.out.println("5. 10 Fold Cross Validation Evalutation");
             System.out.println("6. Percentage Split Evalutation");
             System.out.println("7. Save Model");

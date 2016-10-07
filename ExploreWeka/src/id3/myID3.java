@@ -16,69 +16,182 @@ import weka.core.AttributeStats;
  * @author ASUS X202E
  */
 public class myID3 extends Classifier {
-    Node root;
-
+    public Node root ;
+    Instances trainingData ;
+    Instances testData ;
+    public static final String ROOT_STRING = "root" ;
+    public int[][] confussionMatrix ;
+    
     public myID3(Instances data) {
-  
+        root = new Node() ;
+        root.setAttribute(null);
+        root.setLabel(null);
+        root.setAttributeValue(ROOT_STRING);
+        root.setChildren(new ArrayList<Node>());
+        this.trainingData = data ;
     }
     
-    public void buildClassifier(Instances data) {
-        ArrayList<Attribute> attributes = new ArrayList<>();
-        for (int i=0;i<data.numAttributes();i++) {
-            attributes.add(data.attribute(i));
+    public void classifyInstances(Node model , Instances testSet) {
+        this.testData = testSet ;
+        AttributeStats attrStats = trainingData.attributeStats(trainingData.classIndex());
+        int[] nominalCount = attrStats.nominalCounts;
+        int distinctClass = getTotalDistinctLabel(trainingData);
+        confussionMatrix = new int[distinctClass][distinctClass];
+        for (int i=0;i<distinctClass;i++) {
+            for (int j=0 ; j<distinctClass;j++) confussionMatrix[i][j]=0;
         }
-        attributes.remove(data.classAttribute());
-        root = id3(data,attributes);
+        Attribute attr = trainingData.classAttribute() ;
+        //attr.indexOfValue(ROOT_STRING)
+        for (int i=0;i<testSet.numInstances();i++) {
+            String labelFromClassf = classifyOneInstance(model,testSet.instance(i));
+            String labelFromData = testSet.instance(i).stringValue(attr);
+            int idxLabelFromClassf = attr.indexOfValue(labelFromClassf);
+            int idxLabelFromData = attr.indexOfValue(labelFromData);
+            confussionMatrix[idxLabelFromClassf][idxLabelFromData]++ ;
+        }
     }
     
-    public void classifyInstances(Instance instance) {
-        
-    }
-    
-    private Node id3(Instances data, ArrayList<Attribute> attributes) {
-        if (data.numClasses()==1) return new Node(data.firstInstance().classValue());
-        else if (attributes.size()==0) return new Node(mostCommonLabel(data));
-        else {
-            Node node = new Node();
-            Attribute bestAttribute = findBestAttribute(data,attributes);
-            Enumeration attValues = bestAttribute.enumerateValues();
-            while (attValues.hasMoreElements()) {
-                String value = (String)attValues.nextElement();
-                Node child = new Node(bestAttribute.name(),value);
-                Instances subset = new Instances(data);
-                subset.delete();
-                for (int i=0; i<data.numInstances(); i++) {
-                    Instance currInstance = data.instance(i);
-                    if (currInstance.stringValue(bestAttribute).equals(value)) subset.add(currInstance);
-                }
-                if (subset.numInstances()==0) {
-                    child.addChild(new Node(mostCommonLabel(data)));
-                } else {
-                    attributes.remove(bestAttribute);
-                    Node childBranch = id3(subset,attributes);
-                    child.addChild(childBranch);
-                }
-                node.addChild(child);
+    public double[] countAccuracy() {
+        int rightClassif = 0, totalData = 0 ;
+        double[] accuracy = new double[2] ;
+        for (int i=0;i<getTotalDistinctLabel(trainingData);i++) {
+            for (int j=0; j<getTotalDistinctLabel(trainingData);j++) {
+                totalData+=confussionMatrix[i][j] ;
+                if (i==j) rightClassif+=confussionMatrix[i][j] ;
             }
-            return node;
+        }
+        accuracy[0] = rightClassif ;
+        accuracy[1] = totalData ;
+        return accuracy ;
+    }
+    
+    public void printSummary() {
+        printConfussionMatrix() ;
+        System.out.println() ;
+        double[] accuracy = countAccuracy() ;
+        System.out.println("\nTotal Instances : "+accuracy[1]);
+        System.out.println("Right classification : "+accuracy[0]+" ( "+(double)accuracy[0]/accuracy[1]*100+"% ) ");
+    }
+    
+    public void printConfussionMatrix() {       
+        Attribute attr = trainingData.classAttribute() ;
+        AttributeStats attrStats = trainingData.attributeStats(trainingData.classIndex());
+        System.out.print("\n#");
+        for (int i=0 ; i<attrStats.distinctCount;i++) System.out.print("\t"+attr.value(i));
+        for (int i=0; i<attrStats.distinctCount;i++) {
+            System.out.print("\n"+attr.value(i));
+            for (int j=0; j<attrStats.distinctCount;j++) {
+                //System.out.print(i+"|"+j+"\n");
+                System.out.print("\t"+confussionMatrix[i][j]);
+            }
         }
     }
     
-    public Attribute findBestAttribute(Instances data, ArrayList<Attribute> attributes) {
+    public String classifyOneInstance(Node model ,Instance instance) {
+        if (model.getChildren().size()==0) {
+            String attrName = model.getAttribute().name() ;
+            String attrValue = model.getAttributeValue();
+            if (checkAttrValueSame(instance,attrName,attrValue)) {
+                    return model.getLabel();
+            }
+        } else {
+            for (int i=0 ; i< model.getChildren().size();i++) {
+                String attrName = model.getChildren().get(i).getAttribute().name() ;
+                String attrValue = model.getChildren().get(i).getAttributeValue();
+                if (checkAttrValueSame(instance,attrName,attrValue)) {
+                    return classifyOneInstance(model.getChildren().get(i),instance);
+                } 
+            }
+        }
+        return "unclassified";
+    }
+    
+    public boolean checkAttrValueSame(Instance instance, String attrName, String attrValue) {
+        String instanceAttrVal= instance.stringValue(trainingData.attribute(attrName));
+        return attrValue.equals(instanceAttrVal);
+    }
+    
+    public int findAttributeIndex(String value, Instance instance) {
+        for (int i=0;i<instance.numAttributes();i++) {
+            if (instance.attribute(i).name().equals(value)) return i ;
+        }
+        return -1 ;
+    }
+    
+    public void printSpace(int x) {
+        for (int i=0 ; i<x ; i++) System.out.print(" ");
+    }
+    
+    public void printTree(Node tree,int totalSpace) {
+        if (tree.getChildren().size()==0) {
+            printSpace(totalSpace);
+            if (tree.getAttribute() == null) System.out.print("Attribut : null");
+            else System.out.print("Attribut : "+tree.getAttribute().name());
+            System.out.println(" | Value : "+tree.getAttributeValue()+" | Label : "+tree.getLabel());
+        } else {
+            printSpace(totalSpace);
+            if (tree.getAttribute() == null) System.out.print("Attribut : null");
+            else System.out.print("Attribut : "+tree.getAttribute().name());
+            System.out.println(" | Value : "+tree.getAttributeValue()+" | Label : "+tree.getLabel());
+            for (int i=0;i<tree.getChildren().size();i++) {
+                printTree(tree.getChildren().get(i),totalSpace+2);
+            }
+        }
+    }
+    public void buildID3(Node root, Instances data) {
+        Attribute bestAttribute = findBestAttribute(data);
+        AttributeStats attributeStats = data.attributeStats(bestAttribute.index());
+        Enumeration attValues = bestAttribute.enumerateValues();
+        int[] totalCount = attributeStats.nominalCounts ; 
+        int idx = 0, it = 0;    
+//        System.out.println("Best attr : "+bestAttribute.name());
+        data.sort(bestAttribute);
+        while (attValues.hasMoreElements()) {
+            String value = (String)attValues.nextElement();
+  //          System.out.println("  value : "+value);
+            Node child = new Node(bestAttribute,value);
+            Instances subset = new Instances(data,idx,totalCount[it]);
+            idx+=totalCount[it];
+            it++;
+            int numClasses = getTotalDistinctLabel(subset) ;
+            //System.out.println(subset);
+    //        System.out.println("        "+subset.numInstances()+"|"+numClasses);
+            if (subset.numInstances()==0) {
+                child.setLabel(mostCommonLabel(data));
+                root.addChild(child);
+//                System.out.println("Add new child : "+"|"+child.getAttributeValue()+
+//                        "|"+child.getLabel()+" from "+root.getAttributeValue()+"|"+root.getLabel());
+            } else if (numClasses==1) {
+                String label = subset.firstInstance().stringValue(subset.attribute(subset.classIndex()));
+                child.setLabel(label);
+                root.addChild(child);
+            } else {
+                root.addChild(child);
+                subset.deleteAttributeAt(bestAttribute.index());
+                buildID3(child,subset);                
+            }            
+        }
+    }
+    public Attribute findBestAttribute(Instances data) {
         //hitung pake entropy & ig & syalala
 	double[] result = findMaxIG(data) ;
         Attribute attr = data.attribute((int)result[0]);
         return attr;
     }
     
-    private double mostCommonLabel(Instances data) {
-        for (int i=0;i<data.numInstances();i++) {
-            //double value = data.instance(i).classValue();
-            //hitung value mana yang paling banyak
-           
+    private String mostCommonLabel(Instances data) {
+        int distinctLabel = getTotalDistinctLabel(data);
+        int classIdx = data.classIndex();
+	AttributeStats attributeStats = data.attributeStats(classIdx);
+	int[] classCount = attributeStats.nominalCounts;
+	int max = 0, idx = 0 ;
+        for (int i=0;i<classCount.length;i++) {
+            if (classCount[i]>max) {
+                max = classCount[i] ;
+                idx = i ;
+            }
         }
-        //return value yg paling banyak        
-	return 0;
+	return data.attribute(classIdx).value(idx);
     }
     
     //Menghitung nilai Entropy S
@@ -148,13 +261,6 @@ public class myID3 extends Classifier {
         //    System.out.println("Entropy "+attr.value(i)+" : "+entropy);
             sum+=(double) attrCount[i]/TOTAL_INSTANCES*entropy;
         }
-//        for (int i=0;i<TOTAL_DISTINCT_VALUE;i++) {
-//            System.out.print("Enum Tbable : ");
-//            for (int j=0;j< TOTAL_DISTINCT_LABEL;j++) {
-//               System.out.print(enumResult[i][j]+" ");
-//            }
-//            System.out.println(" *"+i);
-//        }
         return sum ;
     }
     
@@ -222,5 +328,10 @@ public class myID3 extends Classifier {
     public double log2(double input) {
        if (input==0) return 0 ;
          return Math.log(input)/Math.log(2);
+    }
+
+    @Override
+    public void buildClassifier(Instances i) throws Exception {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }

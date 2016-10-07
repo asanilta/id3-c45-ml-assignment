@@ -12,32 +12,43 @@ import java.util.ArrayList;
  *
  * @author ASUS X202E
  */
+import weka.core.Instances;
+import weka.core.Attribute;
+import java.util.ArrayList;
+
+/**
+ *
+ * @author ASUS X202E
+ */
 public class Node {
-    private String attributeName;
+    private Attribute attribute;
     private String attributeValue;
-    private double label;
+    private String label;
     private ArrayList<Node> children;
-//    private Node parent;
 
-    public Node(String attributeName, String attributeValue) {
-        this.attributeName = attributeName;
+    public Node(Attribute attribute, String attributeValue) {
+        this.attribute = attribute;
         this.attributeValue = attributeValue;
+        this.label = null ;
+        this.children = new ArrayList<Node>() ;
     }
     
-    public Node(double label) {
+    public Node(String label) {
         this.label = label;
+        this.children = new ArrayList<Node>() ;
     }
     
-    public Node() {
-        
+    public Node() {        
+        this.label = null ;
+        this.children = new ArrayList<Node>() ;
     }
     
-    public String getAttributeName() {
-        return attributeName;
+    public Attribute getAttribute() {
+        return attribute;
     }
 
-    public void setAttributeName(String attributeName) {
-        this.attributeName = attributeName;
+    public void setAttribute(Attribute attribute) {
+        this.attribute = attribute;
     }
 
     public String getAttributeValue() {
@@ -48,11 +59,11 @@ public class Node {
         this.attributeValue = attributeValue;
     }
 
-    public double getLabel() {
+    public String getLabel() {
         return label;
     }
 
-    public void setLabel(double label) {
+    public void setLabel(String label) {
         this.label = label;
     }
 
@@ -68,12 +79,6 @@ public class Node {
         children.add(child);
     }
 
-//    public Node getParent() {
-//        return parent;
-//    }
-//
-//    public void setParent(Node parent) {
-//        this.parent = parent;
-//    }
+    
     
 }
